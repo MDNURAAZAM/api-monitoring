@@ -12,10 +12,6 @@ const { handleReqRes } = require("./helpers/handleReqRes");
 const environment = require("./helpers/environments");
 const lib = require("./lib/data");
 
-lib.delete("test", "sample02", (err) => {
-  console.log(err);
-});
-
 //app object - module scaffolding
 const app = {};
 
