@@ -12,7 +12,7 @@ const { handleReqRes } = require("./helpers/handleReqRes");
 const environment = require("./helpers/environments");
 const lib = require("./lib/data");
 
-lib.update("test", "sample02", { name: "asma", age: 26 }, (err) => {
+lib.delete("test", "sample02", (err) => {
   console.log(err);
 });
 
