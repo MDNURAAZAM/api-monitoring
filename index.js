@@ -12,8 +12,8 @@ const { handleReqRes } = require("./helpers/handleReqRes");
 const environment = require("./helpers/environments");
 const lib = require("./lib/data");
 
-lib.read("test", "sample01", (err, data) => {
-  console.log(err, data);
+lib.update("test", "sample02", { name: "asma", age: 26 }, (err) => {
+  console.log(err);
 });
 
 //app object - module scaffolding
