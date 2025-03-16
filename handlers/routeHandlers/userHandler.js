@@ -182,10 +182,41 @@ handler._users.put = (requestProperties, callback) => {
     });
   }
 };
+
+//delete request handler
 handler._users.delete = (requestProperties, callback) => {
-  callback(200, {
-    message: "delete url",
-  });
+  const phone =
+    typeof requestProperties?.queryStringObject?.phone === "string" &&
+    requestProperties?.queryStringObject?.phone?.length === 11
+      ? requestProperties?.queryStringObject?.phone
+      : false;
+
+  console.log(phone);
+  if (phone) {
+    data.read("users", phone, (err1) => {
+      if (!err1) {
+        data.delete("users", phone, (err2) => {
+          if (!err2) {
+            callback(200, {
+              message: "User was deleted succesfully",
+            });
+          } else {
+            callback(500, {
+              error: "There was an error in the server side",
+            });
+          }
+        });
+      } else {
+        callback(404, {
+          error: "Requested user was not found",
+        });
+      }
+    });
+  } else {
+    callback(404, {
+      error: "Requested user was not found",
+    });
+  }
 };
 
 // export module
