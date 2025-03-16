@@ -10,6 +10,11 @@
 const http = require("http");
 const { handleReqRes } = require("./helpers/handleReqRes");
 const environment = require("./helpers/environments");
+const lib = require("./lib/data");
+
+lib.create("test", "sample02", { name: "azam", age: 28 }, (err) => {
+  console.log(err);
+});
 
 //app object - module scaffolding
 const app = {};
