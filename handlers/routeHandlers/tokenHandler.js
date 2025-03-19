@@ -93,19 +93,20 @@ handler._token.post = (requestProperties, callback) => {
 
 //get request handler
 handler._token.get = (requestProperties, callback) => {
-  const { phone: requestedPhone } = requestProperties?.queryStringObject;
+  const { id: requestedTokenId } = requestProperties?.queryStringObject;
 
-  const phone =
-    typeof requestedPhone === "string" && requestedPhone.trim().length === 11
-      ? requestedPhone
+  const tokenId =
+    typeof requestedTokenId === "string" &&
+    requestedTokenId.trim().length === 20
+      ? requestedTokenId
       : false;
-  if (phone) {
-    //lookup the user
-    data.read("users", phone, (err1, data) => {
-      if (!err1) {
-        const userData = { ...parseJSON(data) };
-        delete userData.password;
-        callback(200, userData);
+  if (tokenId) {
+    //lookup the token
+    data.read("tokens", tokenId, (err1, tokenData) => {
+      if (!err1 && tokenData) {
+        const token = { ...parseJSON(tokenData) };
+
+        callback(200, token);
       } else {
         callback(404, {
           error: "Requested user was not found",
