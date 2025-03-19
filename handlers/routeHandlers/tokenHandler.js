@@ -168,20 +168,21 @@ handler._token.put = (requestProperties, callback) => {
 
 //delete request handler
 handler._token.delete = (requestProperties, callback) => {
-  const phone =
-    typeof requestProperties?.queryStringObject?.phone === "string" &&
-    requestProperties?.queryStringObject?.phone?.length === 11
-      ? requestProperties?.queryStringObject?.phone
-      : false;
+  const { id: requestedTokenId } = requestProperties?.queryStringObject;
 
-  console.log(phone);
-  if (phone) {
-    data.read("users", phone, (err1) => {
+  const tokenId =
+    typeof requestedTokenId === "string" &&
+    requestedTokenId.trim().length === 20
+      ? requestedTokenId
+      : false;
+  if (tokenId) {
+    // look up for the token
+    data.read("tokens", tokenId, (err1) => {
       if (!err1) {
-        data.delete("users", phone, (err2) => {
+        data.delete("tokens", tokenId, (err2) => {
           if (!err2) {
             callback(200, {
-              message: "User was deleted succesfully",
+              message: "Token was deleted succesfully",
             });
           } else {
             callback(500, {
@@ -191,13 +192,13 @@ handler._token.delete = (requestProperties, callback) => {
         });
       } else {
         callback(404, {
-          error: "Requested user was not found",
+          error: "Requested token was not found",
         });
       }
     });
   } else {
     callback(404, {
-      error: "Requested user was not found",
+      error: "Requested token was not found",
     });
   }
 };
