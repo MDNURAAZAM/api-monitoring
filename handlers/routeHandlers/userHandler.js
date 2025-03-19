@@ -237,21 +237,42 @@ handler._users.delete = (requestProperties, callback) => {
       ? requestProperties?.queryStringObject?.phone
       : false;
 
-  console.log(phone);
   if (phone) {
     data.read("users", phone, (err1) => {
       if (!err1) {
-        data.delete("users", phone, (err2) => {
-          if (!err2) {
-            callback(200, {
-              message: "User was deleted succesfully",
-            });
-          } else {
-            callback(500, {
-              error: "There was an error in the server side",
-            });
-          }
-        });
+        //token verification
+        const token =
+          typeof requestProperties.headersObject.token === "string" &&
+          requestProperties.headersObject.token.trim().length === 20
+            ? requestProperties.headersObject.token.trim()
+            : false;
+
+        if (token) {
+          //verify the token in the header
+          tokenHandler._token.verify(token, phone, (isValid) => {
+            if (isValid) {
+              data.delete("users", phone, (err2) => {
+                if (!err2) {
+                  callback(200, {
+                    message: "User was deleted succesfully",
+                  });
+                } else {
+                  callback(500, {
+                    error: "There was an error in the server side",
+                  });
+                }
+              });
+            } else {
+              callback(403, {
+                error: "Authentication failure",
+              });
+            }
+          });
+        } else {
+          callback(403, {
+            error: "Authentication failure",
+          });
+        }
       } else {
         callback(404, {
           error: "Requested user was not found",
