@@ -124,64 +124,44 @@ handler._token.get = (requestProperties, callback) => {
 handler._token.put = (requestProperties, callback) => {
   const { body } = requestProperties || {};
 
-  const firstName =
-    typeof body?.firstName === "string" && body?.firstName?.trim().length > 0
-      ? body.firstName
+  const id =
+    typeof body?.id === "string" && body?.id?.trim().length === 20
+      ? body.id
       : false;
 
-  const lastName =
-    typeof body?.lastName === "string" && body?.lastName?.trim().length > 0
-      ? body.lastName
-      : false;
+  const extend = !!(typeof body?.extend === "boolean" && body?.extend === true);
 
-  const phone =
-    typeof body?.phone === "string" && body?.phone?.trim().length === 11
-      ? body.phone
-      : false;
+  if (id && extend) {
+    data.read("tokens", id, (err1, token) => {
+      if (!err1 && token) {
+        const tokenData = { ...parseJSON(token) };
+        if (tokenData?.expires > Date.now()) {
+          tokenData.expires = Date.now() + 60 * 60 * 1000;
 
-  const password =
-    typeof body?.password === "string" && body?.password?.trim().length > 0
-      ? body.password
-      : false;
-  if (phone) {
-    if (firstName || lastName || password) {
-      //lookup for the user
-      data.read("users", phone, (err1, user) => {
-        if (!err1) {
-          const userData = { ...parseJSON(user) };
-
-          if (firstName) {
-            userData.firstName = firstName;
-          }
-
-          if (lastName) {
-            userData.lastName = lastName;
-          }
-
-          if (password) {
-            userData.password = hash(password);
-          }
-
-          //update in the db
-          data.update("users", phone, userData, (err2) => {
+          //store the updated token
+          data.update("tokens", id, tokenData, (err2) => {
             if (!err2) {
-              callback(200, {
-                message: "User was updated succesfully",
-              });
+              callback(200);
             } else {
-              callback(500, { error: "There was an error in the server side" });
+              callback(500, {
+                error: "there was an error in the server side",
+              });
             }
           });
         } else {
           callback(400, {
-            error: "Invalid user. Please try again",
+            error: "token already expired",
           });
         }
-      });
-    }
+      } else {
+        callback(400, {
+          error: "Invalid Token. Please try again",
+        });
+      }
+    });
   } else {
     callback(400, {
-      error: "Invalid user. Please try again",
+      error: "Invalid token. Please try again",
     });
   }
 };
