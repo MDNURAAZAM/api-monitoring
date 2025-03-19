@@ -181,16 +181,40 @@ handler._users.put = (requestProperties, callback) => {
             userData.password = hash(password);
           }
 
-          //update in the db
-          data.update("users", phone, userData, (err2) => {
-            if (!err2) {
-              callback(200, {
-                message: "User was updated succesfully",
-              });
-            } else {
-              callback(500, { error: "There was an error in the server side" });
-            }
-          });
+          //token verification
+          const token =
+            typeof requestProperties.headersObject.token === "string" &&
+            requestProperties.headersObject.token.trim().length === 20
+              ? requestProperties.headersObject.token.trim()
+              : false;
+
+          if (token) {
+            //verify the token in the header
+            tokenHandler._token.verify(token, phone, (isValid) => {
+              if (isValid) {
+                //update in the db
+                data.update("users", phone, userData, (err2) => {
+                  if (!err2) {
+                    callback(200, {
+                      message: "User was updated succesfully",
+                    });
+                  } else {
+                    callback(500, {
+                      error: "There was an error in the server side",
+                    });
+                  }
+                });
+              } else {
+                callback(403, {
+                  error: "Authentication failure",
+                });
+              }
+            });
+          } else {
+            callback(403, {
+              error: "Authentication failure",
+            });
+          }
         } else {
           callback(400, {
             error: "Invalid user. Please try again",
