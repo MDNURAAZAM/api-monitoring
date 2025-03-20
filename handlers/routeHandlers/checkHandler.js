@@ -163,7 +163,42 @@ handler._check.post = (requestProperties, callback) => {
 };
 
 //get request handler
-handler._check.get = (requestProperties, callback) => {};
+handler._check.get = (requestProperties, callback) => {
+  const { id } = requestProperties?.queryStringObject;
+
+  const checkId =
+    typeof id === "string" && id.trim().length === 20 ? id : false;
+  if (checkId) {
+    data.read("checks", checkId, (err1, checkData) => {
+      if (!err1 && checkData) {
+        //validate the token
+        const token =
+          typeof requestProperties.headersObject.token === "string" &&
+          requestProperties.headersObject.token.trim().length === 20
+            ? requestProperties.headersObject.token.trim()
+            : false;
+        const phone = parseJSON(checkData).userPhone;
+        tokenHandler._token.verify(token, phone, (isValid) => {
+          if (isValid) {
+            callback(200, parseJSON(checkData));
+          } else {
+            callback(403, {
+              error: "Authentication failure!",
+            });
+          }
+        });
+      } else {
+        callback(400, {
+          error: "You have a problem in your request",
+        });
+      }
+    });
+  } else {
+    callback(400, {
+      error: "You have a problem in your request",
+    });
+  }
+};
 
 //put request handler
 handler._check.put = (requestProperties, callback) => {};
