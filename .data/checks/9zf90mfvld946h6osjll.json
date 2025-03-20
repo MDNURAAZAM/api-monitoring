@@ -1,1 +1,1 @@
-{"id":"9zf90mfvld946h6osjll","userPhone":"01716396579","protocol":"http","url":"google.com","method":"GET","successCodes":[200,201],"timeoutSeconds":3}
+{"id":"9zf90mfvld946h6osjll","userPhone":"01716396579","protocol":"http","url":"google.com","method":"GET","successCodes":[200,201],"timeoutSeconds":3,"state":"down","lastChecked":1742491248801}

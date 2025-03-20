@@ -1,1 +1,1 @@
-{"id":"ukucbla8nishsl96ws98","userPhone":"01716396579","protocol":"http","url":"google.com","method":"GET","successCodes":[200,201],"timeoutSeconds":3}
+{"id":"ukucbla8nishsl96ws98","userPhone":"01716396579","protocol":"http","url":"google.com","method":"GET","successCodes":[200,201,301],"timeoutSeconds":3,"state":"up","lastChecked":1742491248809}
