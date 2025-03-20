@@ -311,7 +311,81 @@ handler._check.put = (requestProperties, callback) => {
 };
 
 //delete request handler
-handler._check.delete = (requestProperties, callback) => {};
+handler._check.delete = (requestProperties, callback) => {
+  const { id } = requestProperties?.queryStringObject;
+
+  const checkId =
+    typeof id === "string" && id.trim().length === 20 ? id : false;
+  if (checkId) {
+    data.read("checks", checkId, (err1, checkData) => {
+      if (!err1 && checkData) {
+        //validate the token
+        const token =
+          typeof requestProperties.headersObject.token === "string" &&
+          requestProperties.headersObject.token.trim().length === 20
+            ? requestProperties.headersObject.token.trim()
+            : false;
+        const phone = parseJSON(checkData).userPhone;
+        tokenHandler._token.verify(token, phone, (isValid) => {
+          if (isValid) {
+            //delete the check data
+            data.delete("checks", checkId, (err2) => {
+              if (!err2) {
+                data.read("users", phone, (err3, usersData) => {
+                  if (!err3 && usersData) {
+                    const userObject = { ...parseJSON(usersData) };
+                    let userChecks =
+                      typeof userObject.checks === "object" &&
+                      userObject.checks instanceof Array
+                        ? userObject.checks
+                        : [];
+
+                    //remove check from user data
+                    if (userChecks?.length > 0) {
+                      userChecks = userChecks.filter((cId) => cId != checkId);
+                      userObject.checks = userChecks;
+
+                      //store updated user
+                      data.update("users", phone, userObject, (err4) => {
+                        if (!err4) {
+                          callback(200);
+                        } else {
+                          callback(500, {
+                            error: "There is a problem in your request",
+                          });
+                        }
+                      });
+                    }
+                  } else {
+                    callback(500, {
+                      error: "There is a problem in your request",
+                    });
+                  }
+                });
+              } else {
+                callback(500, {
+                  error: "There is a problem in your request",
+                });
+              }
+            });
+          } else {
+            callback(403, {
+              error: "Authentication failure!",
+            });
+          }
+        });
+      } else {
+        callback(400, {
+          error: "You have a problem in your request",
+        });
+      }
+    });
+  } else {
+    callback(400, {
+      error: "You have a problem in your request",
+    });
+  }
+};
 
 // export module
 module.exports = handler;
