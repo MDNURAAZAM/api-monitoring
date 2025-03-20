@@ -1,0 +1,175 @@
+/*
+ * Title: Check Handler
+ * Description: functions to handle check routes
+ * Author: MD Nura Azam
+ * Date: 20/03/2025
+ *
+ */
+
+//dependencies
+const {
+  hash,
+  parseJSON,
+  createRandomString,
+} = require("../../helpers/utilities");
+const { maxChecks } = require("../../helpers/environments");
+const data = require("./../../lib/data");
+const tokenHandler = require("./tokenHandler");
+
+// module scaffolding
+const handler = {};
+
+handler.checkHandler = (requestProperties, callback) => {
+  const acceptedMethods = ["get", "post", "put", "delete"];
+
+  if (acceptedMethods.indexOf(requestProperties.method) >= 0) {
+    handler._check[requestProperties.method](requestProperties, callback);
+  } else {
+    callback(405);
+  }
+};
+
+handler._check = {};
+
+//post request handler
+handler._check.post = (requestProperties, callback) => {
+  const { body } = requestProperties || {};
+  //validate inputs
+  const protocol =
+    typeof body.protocol === "string" &&
+    ["http", "https"].indexOf(body?.protocol?.trim()) >= 0
+      ? body.protocol
+      : false;
+
+  const url =
+    typeof body?.url === "string" && body?.url?.trim().length > 0
+      ? body?.url
+      : false;
+
+  const method =
+    typeof body?.method === "string" &&
+    ["GET", "POST", "PUT", "DELETE"].indexOf(
+      body?.method?.toUpperCase().trim()
+    ) >= 0
+      ? body.method.toUpperCase()
+      : false;
+
+  const successCodes =
+    typeof body?.successCodes === "object" &&
+    body?.successCodes instanceof Array
+      ? body.successCodes
+      : false;
+
+  const timeoutSeconds =
+    typeof body.timeoutSeconds === "number" &&
+    body.timeoutSeconds % 1 == 0 &&
+    body.timeoutSeconds >= 1 &&
+    body.timeoutSeconds <= 5
+      ? body.timeoutSeconds
+      : false;
+
+  if (protocol && url && method && successCodes && timeoutSeconds) {
+    //validate the token
+    const token =
+      typeof requestProperties.headersObject.token === "string" &&
+      requestProperties.headersObject.token.trim().length === 20
+        ? requestProperties.headersObject.token.trim()
+        : false;
+    if (token) {
+      data.read("tokens", token, (err1, tokenData) => {
+        if (!err1 && tokenData) {
+          const userPhone = parseJSON(tokenData).phone;
+
+          //verify the user
+          data.read("users", userPhone, (err2, userData) => {
+            if (!err2 && userData) {
+              tokenHandler._token.verify(token, userPhone, (isValid) => {
+                if (isValid) {
+                  const userObject = { ...parseJSON(userData) };
+                  const userChecks =
+                    typeof userObject?.checks === "object" &&
+                    userObject.checks instanceof Array
+                      ? userObject.checks
+                      : [];
+                  if (userChecks?.length < maxChecks) {
+                    const checkId = createRandomString(20);
+                    const checkObject = {
+                      id: checkId,
+                      userPhone,
+                      protocol,
+                      url,
+                      method,
+                      successCodes,
+                      timeoutSeconds,
+                    };
+
+                    //store the object in db
+                    data.create("checks", checkId, checkObject, (err3) => {
+                      if (!err3) {
+                        //add checkId to user's object
+                        userObject.checks =
+                          userChecks?.length > 0
+                            ? [...userChecks, checkId]
+                            : [checkId];
+                        //update user data
+                        data.update("users", userPhone, userObject, (err4) => {
+                          if (!err4) {
+                            callback(200, checkObject);
+                          } else {
+                            callback(500, {
+                              error: "There is a problem in the server side",
+                            });
+                          }
+                        });
+                      } else {
+                        callback(500, {
+                          error: "There is a problem in the server side",
+                        });
+                      }
+                    });
+                  } else {
+                    callback(401, {
+                      error: "Users already reached maximum checks limit",
+                    });
+                  }
+                } else {
+                  callback(403, {
+                    error: "Auhtentication failure! ",
+                  });
+                }
+              });
+            } else {
+              callback(404, {
+                error: "User not found ",
+              });
+            }
+          });
+        } else {
+          callback(403, {
+            error: "Auhtentication failure! ",
+          });
+        }
+      });
+    } else {
+      callback(403, {
+        error: "Auhtentication failure! ",
+      });
+    }
+  } else {
+    callback(400, {
+      error: "You have a problem in your request ",
+    });
+  }
+};
+
+//get request handler
+handler._check.get = (requestProperties, callback) => {};
+
+//put request handler
+handler._check.put = (requestProperties, callback) => {};
+
+//delete request handler
+handler._check.delete = (requestProperties, callback) => {};
+
+// export module
+module.exports = handler;
